@@ -1,6 +1,5 @@
-import { User } from "./app";
-import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friend";
-import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
+import { Post, User } from "./app";
+import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
 import { Router } from "./framework/router";
 
 /**
@@ -9,57 +8,40 @@ import { Router } from "./framework/router";
  */
 export default class Responses {
   /**
-   * Convert PostDoc into more readable format for the frontend by converting the author id into a username.
+   * Converts a PostDoc into more readable format for the frontend
+   * by converting piece IDs into pieces and the author ID into a username.
    */
   static async post(post: PostDoc | null) {
     if (!post) {
       return post;
     }
-    const author = await User.getUserById(post.author);
-    return { ...post, author: author.username };
+
+    return (await this.posts([post]))[0];
   }
 
   /**
-   * Same as {@link post} but for an array of PostDoc for improved performance.
+   * Same as {@link post} but for an array of PostDoc.
    */
   static async posts(posts: PostDoc[]) {
-    const authors = await User.idsToUsernames(posts.map((post) => post.author));
-    return posts.map((post, i) => ({ ...post, author: authors[i] }));
-  }
+    const readablePosts = await Post.convertPieceIdsToPieces(posts);
+    const idToUsername = await User.idsToUsernames(readablePosts.flatMap((post) => post.pieces.map((piece) => piece.author)));
 
-  /**
-   * Convert FriendRequestDoc into more readable format for the frontend
-   * by converting the ids into usernames.
-   */
-  static async friendRequests(requests: FriendRequestDoc[]) {
-    const from = requests.map((request) => request.from);
-    const to = requests.map((request) => request.to);
-    const usernames = await User.idsToUsernames(from.concat(to));
-    return requests.map((request, i) => ({ ...request, from: usernames[i], to: usernames[i + requests.length] }));
+    return readablePosts.map((post) => ({
+      ...post,
+      pieces: post.pieces.map((piece) => ({
+        ...piece,
+        author: idToUsername.get(piece.author.toString()) ?? "DELETED_USER",
+      })),
+    }));
   }
 }
 
-Router.registerError(PostAuthorNotMatchError, async (e) => {
+Router.registerError(PostPieceAuthorNotMatchError, async (e) => {
   const username = (await User.getUserById(e.author)).username;
   return e.formatWith(username, e._id);
 });
 
-Router.registerError(FriendRequestAlreadyExistsError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.from), User.getUserById(e.to)]);
-  return e.formatWith(user1.username, user2.username);
-});
-
-Router.registerError(FriendNotFoundError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.user1), User.getUserById(e.user2)]);
-  return e.formatWith(user1.username, user2.username);
-});
-
-Router.registerError(FriendRequestNotFoundError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.from), User.getUserById(e.to)]);
-  return e.formatWith(user1.username, user2.username);
-});
-
-Router.registerError(AlreadyFriendsError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.user1), User.getUserById(e.user2)]);
-  return e.formatWith(user1.username, user2.username);
+Router.registerError(PostAuthorNotMatchError, async (e) => {
+  const username = (await User.getUserById(e.author)).username;
+  return e.formatWith(username, e._id);
 });
