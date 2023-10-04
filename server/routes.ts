@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { Router, getExpressRouter } from "./framework/router";
 
 import { Collaboration, Post, User, WebSession } from "./app";
+import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
@@ -116,6 +117,26 @@ class Routes {
 
     return contribution;
   }
+
+  /* eslint-disable */
+
+  /**
+   * Retrieves reactions associated with a specific post as an aggregated form
+   */
+  @Router.get("reactions/:_id")
+  async getReactions(_id: ObjectId) {}
+
+  /**
+   * Adds or changes reaction to a specific post
+   */
+  @Router.post("reactions/:_id")
+  async react(session: WebSessionDoc, _id: ObjectId, reactionChoice: ReactionChoice) {}
+
+  /**
+   * Removes a reaction from a specific post
+   */
+  @Router.delete("reactions/:_id")
+  async unReact(session: WebSessionDoc, _id: ObjectId) {}
 }
 
 export default getExpressRouter(new Routes());
