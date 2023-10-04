@@ -99,7 +99,7 @@ class Routes {
     return await Collaboration.getCollaborationByUser(user);
   }
 
-  @Router.post("collabs/:_id")
+  @Router.post("/collabs/:_id")
   async contribute(session: WebSessionDoc, content: string, _id: ObjectId) {
     const user = WebSession.getUser(session);
     const post = await Post.createPiece(user, content);
@@ -123,26 +123,26 @@ class Routes {
   /**
    * Retrieves reactions associated with a specific post as an aggregated form
    */
-  @Router.get("reactions/:_id")
+  @Router.get("/reactions/:_id")
   async getReactions(_id: ObjectId) {}
 
   /**
    * Adds or changes reaction to a specific post
    */
-  @Router.post("reactions/:_id")
+  @Router.post("/reactions/:_id")
   async react(session: WebSessionDoc, _id: ObjectId, reactionChoice: ReactionChoice) {}
 
   /**
    * Removes a reaction from a specific post
    */
-  @Router.delete("reactions/:_id")
+  @Router.delete("/reactions/:_id")
   async unReact(session: WebSessionDoc, _id: ObjectId) {}
 
   /**
    * Retrieves data for a heatmap
    * based on provided latitude, longitude, and zoom level
    */
-  @Router.get("heatmap")
+  @Router.get("/heatmap")
   async getHeatMap(lat: number, long: number, zoom: number) {}
 }
 
