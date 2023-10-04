@@ -144,6 +144,24 @@ class Routes {
    */
   @Router.get("/heatmap")
   async getHeatMap(lat: number, long: number, zoom: number) {}
+
+  /**
+   * Retrieves nearby posts
+   */
+  @Router.get("/map/posts")
+  async getNearbyPosts(lat: number, long: number) {}
+
+  /**
+   * Retrieves posts by the authorized user
+   */
+  @Router.get("/map/posts/my")
+  async getMyPosts(websession: WebSessionDoc) {}
+
+  /**
+   * Retrieves nearby meeting requests
+   */
+  @Router.get("/map/requests")
+  async getNearbyMeetingRequests(lat: number, long: number) {}
 }
 
 export default getExpressRouter(new Routes());
