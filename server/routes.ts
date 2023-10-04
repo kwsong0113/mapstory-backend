@@ -137,6 +137,13 @@ class Routes {
    */
   @Router.delete("reactions/:_id")
   async unReact(session: WebSessionDoc, _id: ObjectId) {}
+
+  /**
+   * Retrieves data for a heatmap
+   * based on provided latitude, longitude, and zoom level
+   */
+  @Router.get("heatmap")
+  async getHeatMap(lat: number, long: number, zoom: number) {}
 }
 
 export default getExpressRouter(new Routes());
