@@ -124,7 +124,7 @@ export default class PostConcept {
    * If the piece is the only piece in its associated post, the post is also deleted.
    */
   async deletePiece(_id: ObjectId) {
-    const post = await this.posts.readOne({ pieces: { $all: [new ObjectId(_id)] } });
+    const post = await this.posts.readOne({ pieces: { $all: [_id] } });
 
     // Check if the post should be deleted together
     const shouldDeletePost = post?.pieces?.length === 1;
@@ -132,11 +132,13 @@ export default class PostConcept {
     if (shouldDeletePost) {
       await this.posts.deleteOne({ _id: post._id });
     } else if (post) {
-      await this.posts.updateOne(
-        { _id },
-        {
-          pieces: post.pieces.filter((piece) => piece.toString() !== _id.toString()),
-        },
+      console.log(
+        await this.posts.updateOneWithOperators(
+          { _id: post._id },
+          {
+            $pull: { pieces: { $eq: _id } },
+          },
+        ),
       );
     }
     await this.postPieces.deleteOne({ _id });

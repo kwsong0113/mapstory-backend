@@ -12,6 +12,7 @@ import {
   ObjectId,
   OptionalUnlessRequiredId,
   ReplaceOptions,
+  UpdateFilter,
   UpdateResult,
   WithId,
   WithoutId,
@@ -113,6 +114,18 @@ export default class DocCollection<Schema extends BaseDoc> {
     this.sanitizeFilter(filter);
     update.dateUpdated = new Date();
     return await this.collection.updateOne(filter, { $set: update }, options);
+  }
+
+  /**
+   * General form of {@link updateOne}
+   * Allows additional update operators like `$push`.
+   */
+  async updateOneWithOperators(filter: Filter<Schema>, update: Omit<UpdateFilter<Schema>, "$set"> & { $set?: Partial<Schema> }, options?: FindOneAndUpdateOptions): Promise<UpdateResult<Schema>> {
+    this.sanitizeFilter(filter);
+    update.$set = update.$set ?? {};
+    update.$set.dateUpdated = new Date();
+    this.sanitizeItem(update.$set);
+    return await this.collection.updateOne(filter, update, options);
   }
 
   /**

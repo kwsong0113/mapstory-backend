@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Post, User, WebSession } from "./app";
+import { Collaboration, Post, User, WebSession } from "./app";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
@@ -86,7 +86,32 @@ class Routes {
   async deletePostPiece(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Post.isAuthorOfPiece(user, _id);
-    return Post.deletePiece(_id);
+    return Post.deletePiece(new ObjectId(_id));
+  }
+
+  @Router.get("/collabs")
+  async getCollaboration(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    return await Collaboration.getCollaborationByUser(user);
+  }
+
+  @Router.post("collabs/:_id")
+  async contribute(session: WebSessionDoc, content: string, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    const post = await Post.createPiece(user, content);
+    const contribution = await Collaboration.contribute(user, post, _id);
+    const collaboration = await Collaboration.getCollaborationById(_id);
+
+    // Create a collaborative post if all contributors have submitted their pieces
+    if (collaboration.waitingFor.length === 0) {
+      const postPieces = await Collaboration.contributionsToItems(collaboration.contributions);
+      const collaborativePost = await Post.createPostFromPieces(postPieces);
+      await Collaboration.cleanUpCollaboration(_id);
+
+      return { msg: "Collaborative post successfully created!", post: collaborativePost.post };
+    }
+
+    return contribution;
   }
 }
 
