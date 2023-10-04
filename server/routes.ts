@@ -1,11 +1,9 @@
 import { ObjectId } from "mongodb";
-
-import { Router, getExpressRouter } from "./framework/router";
-
 import { Collaboration, Post, User, WebSession } from "./app";
 import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
+import { Router, getExpressRouter } from "./framework/router";
 import Responses from "./responses";
 
 class Routes {
@@ -93,13 +91,13 @@ class Routes {
     return Post.deletePiece(new ObjectId(_id));
   }
 
-  @Router.get("/collabs")
-  async getCollaboration(session: WebSessionDoc) {
+  @Router.get("/collab")
+  async getMyCollaboration(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
     return await Collaboration.getCollaborationByUser(user);
   }
 
-  @Router.post("/collabs/:_id")
+  @Router.post("/collab/:_id/contribute")
   async contribute(session: WebSessionDoc, content: string, _id: ObjectId) {
     const user = WebSession.getUser(session);
     const post = await Post.createPiece(user, content);
@@ -121,21 +119,21 @@ class Routes {
   /* eslint-disable */
 
   /**
-   * Retrieves reactions associated with a specific post as an aggregated form
+   * Retrieves reactions associated with a specific post
    */
-  @Router.get("/posts/:id/reactions")
+  @Router.get("/posts/:_id/reactions")
   async getReactions(_id: ObjectId) {}
 
   /**
    * Adds or changes reaction to a specific post
    */
-  @Router.put("/posts/:id/reactions")
+  @Router.put("/posts/:_id/reactions")
   async react(session: WebSessionDoc, _id: ObjectId, reactionChoice: ReactionChoice) {}
 
   /**
    * Removes a reaction from a specific post
    */
-  @Router.delete("/posts/:id/reactions")
+  @Router.delete("/posts/_:id/reactions")
   async unReact(session: WebSessionDoc, _id: ObjectId) {}
 
   /**
@@ -147,21 +145,47 @@ class Routes {
 
   /**
    * Retrieves nearby posts
+   * @todo integrate with @Router.get("/posts")
    */
-  @Router.get("/map/posts")
+  @Router.get("/posts/nearby")
   async getNearbyPosts(lat: number, long: number) {}
 
   /**
-   * Retrieves posts by the authorized user
+   * Retrieves a meeting associated with the authenticated user
    */
-  @Router.get("/map/posts/my")
-  async getMyPosts(websession: WebSessionDoc) {}
+  @Router.get("/meetings")
+  async getMyMeeting(websession: WebSessionDoc) {}
+
+  /**
+   * Ends a specific meeting
+   */
+  @Router.delete("/meetings/:id")
+  async endMeeting(websession: WebSessionDoc, _id: ObjectId) {}
 
   /**
    * Retrieves nearby meeting requests
    */
-  @Router.get("/map/requests")
+  @Router.get("/meetings/requests")
   async getNearbyMeetingRequests(lat: number, long: number) {}
+
+  /**
+   * Sends a meeting request with current location
+   */
+  @Router.post("/meetings/requests")
+  async sendMeetingRequest(session: WebSessionDoc, location: Location) {}
+
+  /**
+   * Cancels a meeting request by the authenticated user
+   */
+  @Router.delete("/meetings/requests")
+  async removeMeetingRequest(session: WebSessionDoc) {}
+
+  /**
+   * Accepts a meeting request from a specific user
+   * and provide location
+   */
+  @Router.put("/meetings/accept/:from")
+  async acceptMeetingRequest(session: WebSessionDoc, from: string, location: Location) {}
 }
 
 export default getExpressRouter(new Routes());
