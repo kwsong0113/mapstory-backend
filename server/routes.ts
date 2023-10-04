@@ -123,19 +123,19 @@ class Routes {
   /**
    * Retrieves reactions associated with a specific post as an aggregated form
    */
-  @Router.get("/reactions/:_id")
+  @Router.get("/posts/:id/reactions")
   async getReactions(_id: ObjectId) {}
 
   /**
    * Adds or changes reaction to a specific post
    */
-  @Router.post("/reactions/:_id")
+  @Router.put("/posts/:id/reactions")
   async react(session: WebSessionDoc, _id: ObjectId, reactionChoice: ReactionChoice) {}
 
   /**
    * Removes a reaction from a specific post
    */
-  @Router.delete("/reactions/:_id")
+  @Router.delete("/posts/:id/reactions")
   async unReact(session: WebSessionDoc, _id: ObjectId) {}
 
   /**
