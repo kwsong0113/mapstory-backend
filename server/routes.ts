@@ -68,6 +68,9 @@ class Routes {
     return Responses.posts(posts);
   }
 
+  /**
+   * @todo add location parameter and sync with Map concept
+   */
   @Router.post("/posts")
   async createPost(session: WebSessionDoc, content: string) {
     const user = WebSession.getUser(session);
