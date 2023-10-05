@@ -1,5 +1,7 @@
 import { Post, User } from "./app";
+import { AlreadyContributedError } from "./concepts/collaboration";
 import { MapDoc } from "./concepts/map";
+import { AlreadyMeetingError, MeetingNotFoundError, MeetingRequestAlreadyExistsError } from "./concepts/meeting";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
 import { Router } from "./framework/router";
 
@@ -58,5 +60,25 @@ Router.registerError(PostPieceAuthorNotMatchError, async (e) => {
 
 Router.registerError(PostAuthorNotMatchError, async (e) => {
   const username = (await User.getUserById(e.author)).username;
+  return e.formatWith(username, e._id);
+});
+
+Router.registerError(MeetingRequestAlreadyExistsError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
+  return e.formatWith(username);
+});
+
+Router.registerError(AlreadyMeetingError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
+  return e.formatWith(username);
+});
+
+Router.registerError(MeetingNotFoundError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
+  return e.formatWith(username);
+});
+
+Router.registerError(AlreadyContributedError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
   return e.formatWith(username, e._id);
 });

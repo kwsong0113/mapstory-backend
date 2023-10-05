@@ -1,11 +1,7 @@
 import haversine from "haversine-distance";
 import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-
-export interface Location {
-  lat: number;
-  lng: number;
-}
+import { Location } from "../types";
 
 export interface MapDoc extends BaseDoc {
   poi: ObjectId;

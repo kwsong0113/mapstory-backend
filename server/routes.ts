@@ -1,11 +1,11 @@
 import { ObjectId } from "mongodb";
 import { Collaboration, MapPost, Post, User, WebSession } from "./app";
-import { Location } from "./concepts/map";
 import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import { Router, getExpressRouter } from "./framework/router";
 import Responses from "./responses";
+import { Location } from "./types";
 
 class Routes {
   @Router.get("/session")
