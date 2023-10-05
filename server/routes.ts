@@ -137,6 +137,7 @@ class Routes {
   @Router.delete("/meeting")
   async endMyMeeting(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
+    await Collaboration.cleanUpCollaboration((await Collaboration.getCollaborationByUser(user))._id);
     return await Meeting.endMeeting(user);
   }
 
@@ -174,15 +175,15 @@ class Routes {
     const { msg, removedRequestId } = await Meeting.removeRequest(user);
 
     // remove the meeting request marker from the map
-    if (removedRequestId) {
-      await MapMeetingRequest.remove(removedRequestId);
-    }
+    await MapMeetingRequest.remove(removedRequestId);
+
     return { msg };
   }
 
   /**
    * Accepts a meeting request from a specific user
    * Removes the request itself and its marker from the map
+   * Creates a collaboration group for the host and guest of the meeting
    */
   @Router.put("/meeting/accept/:from")
   async acceptMeetingRequest(session: WebSessionDoc, from: string, location: Location) {
@@ -195,6 +196,9 @@ class Routes {
 
     const { msg, meeting } = await Meeting.acceptRequest(user, location, request._id);
 
+    // create collaboration group of two users
+    await Collaboration.create([meeting.host, meeting.guest]);
+
     return { msg, meeting: await Responses.meeting(meeting) };
   }
 
@@ -204,14 +208,15 @@ class Routes {
   @Router.get("/collab")
   async getMyCollaboration(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
-    return await Collaboration.getCollaborationByUser(user);
+    return await Responses.collaboration(await Collaboration.getCollaborationByUser(user));
   }
 
   /**
    * Contributes to a collaborative post
    * by creating a new post piece for a specific collaboration.
    * If all contributors have submitted their pieces,
-   * a collaborative post is created.
+   * creates a collaborative post
+   * and clean up collaboration & meeting
    */
   @Router.post("/collab/:_id/contribute")
   async contribute(session: WebSessionDoc, content: string, _id: ObjectId) {
@@ -220,13 +225,18 @@ class Routes {
     const contribution = await Collaboration.contribute(user, post, _id);
     const collaboration = await Collaboration.getCollaborationById(_id);
 
-    // Create a collaborative post if all contributors have submitted their pieces
+    // create a collaborative post if all contributors have submitted their pieces
     if (collaboration.waitingFor.length === 0) {
       const postPieces = await Collaboration.contributionsToItems(collaboration.contributions);
-      const collaborativePost = await Post.createPostFromPieces(postPieces);
+      const { post: collaborativePost } = await Post.createPostFromPieces(postPieces);
+      const meeting = await Meeting.getMeetingByUserId(user);
+      // add the collaborative post to the map
+      await MapPost.add(collaborativePost._id, meeting.at);
+      // clean up collaboration & meeting
       await Collaboration.cleanUpCollaboration(_id);
+      await Meeting.endMeeting(user);
 
-      return { msg: "Collaborative post successfully created!", post: collaborativePost.post };
+      return { msg: "Collaborative post successfully created!", post: await Responses.post(collaborativePost) };
     }
 
     return contribution;

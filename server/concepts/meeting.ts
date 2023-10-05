@@ -77,7 +77,10 @@ export default class MeetingConcept {
    */
   async removeRequest(from: ObjectId) {
     const request = await this.meetingRequests.popOne({ from });
-    return { msg: "Removed request!", removedRequestId: request?._id };
+    if (!request) {
+      throw new MeetingRequestNotFoundError(from);
+    }
+    return { msg: "Removed request!", removedRequestId: request._id };
   }
 
   /**

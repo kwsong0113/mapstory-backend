@@ -1,5 +1,5 @@
-import { Meeting, Post, User } from "./app";
-import { AlreadyContributedError } from "./concepts/collaboration";
+import { Collaboration, Meeting, Post, User } from "./app";
+import { AlreadyContributedError, CollaborationDoc, CollaborationNotMemberError } from "./concepts/collaboration";
 import { MapDoc } from "./concepts/map";
 import { AlreadyMeetingError, MeetingDoc, MeetingNotFoundError, MeetingRequestAlreadyExistsError, MeetingRequestDoc, MeetingRequestNotFoundError } from "./concepts/meeting";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
@@ -27,7 +27,7 @@ export default class Responses {
    */
   static async posts(posts: PostDoc[]) {
     const readablePosts = await Post.convertPieceIdsToPieces(posts);
-    const idToUsername = await User.getIdsToUsernames(readablePosts.flatMap((post) => post.pieces.map((piece) => piece.author)));
+    const idToUsername = await User.getIdToUsername(readablePosts.flatMap((post) => post.pieces.map((piece) => piece.author)));
 
     return readablePosts.map((post) => ({
       ...post,
@@ -62,9 +62,9 @@ export default class Responses {
   /**
    * Converts a MeetingDoc into a readable format for the frontend
    */
-  static async meeting({ host, guest, at }: MeetingDoc) {
-    const [hostName, guestName] = await User.idsToUsernames([host, guest]);
-    return { host: hostName, guest: guestName, at };
+  static async meeting(meeting: MeetingDoc) {
+    const [hostName, guestName] = await User.idsToUsernames([meeting.host, meeting.guest]);
+    return { ...meeting, host: hostName, guest: guestName };
   }
 
   /**
@@ -81,6 +81,20 @@ export default class Responses {
       },
       location: at,
     }));
+  }
+
+  static async collaboration(collaboration: CollaborationDoc) {
+    const readableContributions = await Collaboration.idsToContributions(collaboration.contributions);
+    const usernames = await User.idsToUsernames(readableContributions.map((contribution) => contribution.by));
+
+    return {
+      ...collaboration,
+      waitingFor: await User.idsToUsernames(collaboration.waitingFor),
+      contributions: readableContributions.map(({ item }, idx) => ({
+        by: usernames[idx],
+        item,
+      })),
+    };
   }
 }
 
@@ -112,6 +126,11 @@ Router.registerError(MeetingNotFoundError, async (e) => {
 Router.registerError(MeetingRequestNotFoundError, async (e) => {
   const username = (await User.getUserById(e.user)).username;
   return e.formatWith(username);
+});
+
+Router.registerError(CollaborationNotMemberError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
+  return e.formatWith(username, e._id);
 });
 
 Router.registerError(AlreadyContributedError, async (e) => {

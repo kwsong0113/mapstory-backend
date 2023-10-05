@@ -54,6 +54,17 @@ export default class CollaborationConcept {
   }
 
   /**
+   * Retrieves an array of contributions based on the provided array of contribution IDs
+   */
+  async idsToContributions(ids: ObjectId[]) {
+    const contributions = await this.contributions.readMany({ _id: { $in: ids } });
+
+    const idToContribution = new Map(contributions.map((contribution) => [contribution._id.toString(), contribution]));
+
+    return ids.map((id) => idToContribution.get(id.toString())!);
+  }
+
+  /**
    * Retrieves a collaboration by its ID
    */
   async getCollaborationById(_id: ObjectId) {
@@ -68,8 +79,11 @@ export default class CollaborationConcept {
    * Retrieves a collaboration by user
    */
   async getCollaborationByUser(user: ObjectId) {
+    const contributions = await this.contributions.readOne({
+      by: { $in: [user] },
+    });
     const collaboration = await this.collaborations.readOne({
-      waitingFor: { $in: [user] },
+      $or: [{ waitingFor: { $in: [user] } }, ...[contributions ? { contributions: { $in: [contributions._id] } } : {}]],
     });
     if (!collaboration) {
       throw new NotFoundError(`The user is not collaborating!`);
@@ -86,10 +100,10 @@ export default class CollaborationConcept {
       _id: { $in: collaboration.contributions },
     });
 
-    if (contributions.some((contribution) => contribution.by === user)) {
+    if (contributions.some((contribution) => contribution.by.toString() === user.toString())) {
       throw new AlreadyContributedError(user, _id);
     }
-    if (collaboration.waitingFor.every((id) => id !== user)) {
+    if (collaboration.waitingFor.every((id) => id.toString() !== user.toString())) {
       throw new CollaborationNotMemberError(user, _id);
     }
   }
