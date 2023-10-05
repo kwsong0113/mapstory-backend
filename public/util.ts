@@ -77,6 +77,18 @@ const operations: operation[] = [
     method: "DELETE",
     fields: { id: "input" },
   },
+  {
+    name: "Get My Collaboration Group",
+    endpoint: "/api/collab",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Contribute to Collaborative Post",
+    endpoint: "/api/collab/:id/contribute",
+    method: "POST",
+    fields: { id: "input", content: "input" },
+  },
 ];
 
 // Do not edit below here.

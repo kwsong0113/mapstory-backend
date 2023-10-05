@@ -118,12 +118,21 @@ class Routes {
     return { msg };
   }
 
+  /**
+   * Retrieves the collaboration associated with the authenticated user
+   */
   @Router.get("/collab")
   async getMyCollaboration(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
     return await Collaboration.getCollaborationByUser(user);
   }
 
+  /**
+   * Contributes to a collaborative post
+   * by creating a new post piece for a specific collaboration.
+   * If all contributors have submitted their pieces,
+   * a collaborative post is created.
+   */
   @Router.post("/collab/:_id/contribute")
   async contribute(session: WebSessionDoc, content: string, _id: ObjectId) {
     const user = WebSession.getUser(session);
