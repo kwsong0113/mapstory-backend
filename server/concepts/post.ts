@@ -43,7 +43,7 @@ export default class PostConcept {
 
     return {
       msg: "Post successfully created!",
-      post: await this.posts.readOne({ _id }),
+      post: (await this.posts.readOne({ _id })) as PostDoc,
     };
   }
 
@@ -76,6 +76,16 @@ export default class PostConcept {
     return await this.getPosts({
       pieces: { $in: postPieces.map((piece) => piece._id) },
     });
+  }
+
+  /**
+   * Retrieves an array of posts based on the provided array of post IDs
+   */
+  async idsToPosts(ids: ObjectId[]) {
+    const posts = await this.posts.readMany({ _id: { $in: ids } });
+
+    const postToUser = new Map(posts.map((post) => [post._id.toString(), post]));
+    return ids.map((id) => postToUser.get(id.toString())!);
   }
 
   /**
@@ -132,18 +142,18 @@ export default class PostConcept {
     if (shouldDeletePost) {
       await this.posts.deleteOne({ _id: post._id });
     } else if (post) {
-      console.log(
-        await this.posts.updateOneWithOperators(
-          { _id: post._id },
-          {
-            $pull: { pieces: { $eq: _id } },
-          },
-        ),
+      await this.posts.updateOneWithOperators(
+        { _id: post._id },
+        {
+          $pull: { pieces: { $eq: _id } },
+        },
       );
     }
     await this.postPieces.deleteOne({ _id });
 
-    return { msg: `Post piece${shouldDeletePost ? " and post" : ""} deleted successfully!` };
+    // if the post was deleted,
+    // include the ID of the deleted post
+    return { msg: `Post piece${shouldDeletePost ? " and post" : ""} deleted successfully!`, ...(shouldDeletePost ? { deletedPost: post._id } : {}) };
   }
 }
 

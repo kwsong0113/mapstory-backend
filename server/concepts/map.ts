@@ -13,13 +13,17 @@ export interface MapDoc extends BaseDoc {
 }
 
 export default class MapConcept {
-  public readonly points = new DocCollection<MapDoc>("points");
+  constructor(public readonly name: string) {
+    this.name = name;
+  }
+
+  public readonly markers = new DocCollection<MapDoc>(this.name);
 
   /**
    * Adds a point of interest (POI) with its location to the map
    */
   async add(poi: ObjectId, location: Location) {
-    await this.points.createOne({
+    await this.markers.createOne({
       poi,
       location,
     });
@@ -27,26 +31,35 @@ export default class MapConcept {
     return { msg: "Successfully added to map!" };
   }
 
-  /**
-   * Retrieves points from the map based on a specified query.
-   */
-  async getPoints(query: Filter<MapDoc>) {
-    const points = await this.points.readMany(query, {
-      sort: { dateUpdated: -1 },
-    });
-    return points;
+  async remove(poi: ObjectId) {
+    await this.markers.deleteOne({ poi });
+
+    return { msg: "Successfully removed from map!" };
   }
 
   /**
-   * Finds nearby points on the map based on a given location.
+   * Retrieves markers from the map based on a specified query.
    */
-  async findNearby(location: Location, limit: number) {
-    const points = await this.getPoints({});
+  async getMarkers(query: Filter<MapDoc>) {
+    const markers = await this.markers.readMany(query, {
+      sort: { dateUpdated: -1 },
+    });
+    return markers;
+  }
 
-    // sort points by the distance from the given location
+  /**
+   * Finds nearby markers on the map based on a given location
+   * and the provided query
+   */
+  async findNearby(query: Filter<MapDoc>, limit: number, location?: Location) {
+    const markers = await this.getMarkers(query);
+
+    // sort markers by the distance from the given location
     // using haversine formula
-    points.sort((a: MapDoc, b: MapDoc) => haversine(a.location, location) - haversine(b.location, location));
+    if (location) {
+      markers.sort((a: MapDoc, b: MapDoc) => haversine(a.location, location) - haversine(b.location, location));
+    }
 
-    return points.slice(0, limit);
+    return markers.slice(0, limit);
   }
 }

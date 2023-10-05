@@ -54,16 +54,16 @@ const operations: operation[] = [
     fields: { username: "input" },
   },
   {
-    name: "Get Posts (empty for all)",
+    name: "Get Post Markers",
     endpoint: "/api/posts",
     method: "GET",
-    fields: { author: "input" },
+    fields: { author: "input", lat: "input", lng: "input", limit: "input" },
   },
   {
     name: "Create Single Post",
     endpoint: "/api/posts",
     method: "POST",
-    fields: { content: "input" },
+    fields: { content: "input", location: { lat: "input", lng: "input" } },
   },
   {
     name: "Update Post Piece",

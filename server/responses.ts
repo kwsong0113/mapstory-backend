@@ -1,4 +1,5 @@
 import { Post, User } from "./app";
+import { MapDoc } from "./concepts/map";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
 import { Router } from "./framework/router";
 
@@ -32,6 +33,20 @@ export default class Responses {
         ...piece,
         author: idToUsername.get(piece.author.toString()) ?? "DELETED_USER",
       })),
+    }));
+  }
+  /**
+   * Converts an array of MapDoc objects representing post markers
+   * into more readable format for the frontend
+   */
+  static async postMarkers(postMarkers: MapDoc[]) {
+    const postIds = postMarkers.map((markers) => markers.poi);
+    const posts = await Post.idsToPosts(postIds);
+    const readablePosts = await this.posts(posts);
+
+    return postMarkers.map(({ location }, idx) => ({
+      post: readablePosts[idx],
+      location,
     }));
   }
 }

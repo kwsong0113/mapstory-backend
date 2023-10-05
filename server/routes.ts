@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
-import { Collaboration, Post, User, WebSession } from "./app";
+import { Collaboration, MapPost, Post, User, WebSession } from "./app";
+import { Location } from "./concepts/map";
 import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -55,26 +56,39 @@ class Routes {
     return { msg: "Logged out!" };
   }
 
+  /**
+   * Retrieves post markers (posts + locations)
+   * based on optional query parameters such as author, location, and limit.
+   */
   @Router.get("/posts")
-  async getPosts(author?: string) {
-    let posts;
+  async getPostMarkers(author?: string, lat?: number, lng?: number, limit = 100) {
+    const location = lat && lng ? { lat, lng } : undefined;
+    let markers;
+
     if (author) {
       const id = (await User.getUserByUsername(author))._id;
-      posts = await Post.getByAuthor(id);
+      const posts = await Post.getByAuthor(id);
+      markers = await MapPost.findNearby({ poi: { $in: posts.map((post) => post._id) } }, limit, location);
     } else {
-      posts = await Post.getPosts({});
+      markers = await MapPost.findNearby({}, limit, location);
     }
-    return Responses.posts(posts);
+
+    return Responses.postMarkers(markers);
   }
 
   /**
-   * @todo add location parameter and sync with Map concept
+   * Creates a single-authored post
+   * and also adds the post to the map with the specified location.
    */
   @Router.post("/posts")
-  async createPost(session: WebSessionDoc, content: string) {
+  async createPost(session: WebSessionDoc, content: string, location: Location) {
     const user = WebSession.getUser(session);
-    const created = await Post.createSingle(user, content);
-    return { msg: created.msg, post: await Responses.post(created.post) };
+    const { msg, post } = await Post.createSingle(user, content);
+
+    // add new post to map with its location
+    await MapPost.add(post._id, location);
+
+    return { msg, post: await Responses.post(post) };
   }
 
   @Router.patch("/posts/:_id")
@@ -84,11 +98,24 @@ class Routes {
     return await Post.updatePiece(_id, content);
   }
 
+  /**
+   * Deletes a post piece identified by the given ID.
+   * If there are no other post pieces remaining in the same post,
+   * it also cleans up the parent post itself and removes it from the map.
+   */
   @Router.delete("/posts/:_id")
   async deletePostPiece(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Post.isAuthorOfPiece(user, _id);
-    return Post.deletePiece(new ObjectId(_id));
+    const { msg, deletedPost } = await Post.deletePiece(new ObjectId(_id));
+
+    // if the parent post of post piece is deleted,
+    // remove the post from the map
+    if (deletedPost) {
+      await MapPost.remove(deletedPost);
+    }
+
+    return { msg };
   }
 
   @Router.get("/collab")
@@ -141,14 +168,7 @@ class Routes {
    * based on provided latitude, longitude, and zoom level
    */
   @Router.get("/heatmap")
-  async getHeatMap(lat: number, long: number, zoom: number) {}
-
-  /**
-   * Retrieves nearby posts
-   * @todo integrate with @Router.get("/posts")
-   */
-  @Router.get("/posts/nearby")
-  async getNearbyPosts(lat: number, long: number) {}
+  async getHeatMap(lat: number, lng: number, zoom: number) {}
 
   /**
    * Retrieves a meeting associated with the authenticated user
@@ -166,7 +186,7 @@ class Routes {
    * Retrieves nearby meeting requests
    */
   @Router.get("/meetings/requests")
-  async getNearbyMeetingRequests(lat: number, long: number) {}
+  async getNearbyMeetingRequests(lat: number, lng: number) {}
 
   /**
    * Sends a meeting request with current location
