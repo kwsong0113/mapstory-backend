@@ -50,16 +50,19 @@ export default class MeetingConcept {
    */
   async sendRequest(from: ObjectId, at: Location) {
     await this.canRequestOrAccept(from);
-    await this.meetingRequests.createOne({ from, at });
-    return { msg: "Sent request!" };
+    const _id = await this.meetingRequests.createOne({ from, at });
+    return {
+      msg: "Sent request!",
+      request: (await this.meetingRequests.readOne({ _id })) as MeetingRequestDoc,
+    };
   }
 
   /**
    * Removes a meeting request sent by a user
    */
   async removeRequest(from: ObjectId) {
-    await this.meetingRequests.deleteOne({ from });
-    return { msg: "Removed request!" };
+    const request = await this.meetingRequests.popOne({ from });
+    return { msg: "Removed request!", removedRequestId: request?._id };
   }
 
   /**
@@ -109,6 +112,13 @@ export default class MeetingConcept {
     if (meeting) {
       throw new AlreadyMeetingError(user);
     }
+  }
+
+  /**
+   * Converts meeting request IDs into an array of MeetingRequestDoc
+   */
+  async idsToMeetingRequests(ids: ObjectId[]) {
+    return await this.meetingRequests.readMany({ _id: { $in: ids } });
   }
 }
 

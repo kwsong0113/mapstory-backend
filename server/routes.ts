@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
-import { Collaboration, MapPost, Post, User, WebSession } from "./app";
+import { Collaboration, MapMeetingRequest, MapPost, Meeting, Post, User, WebSession } from "./app";
+import { NotFoundError } from "./concepts/errors";
 import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -57,7 +58,7 @@ class Routes {
   }
 
   /**
-   * Retrieves post markers (posts + locations)
+   * Retrieves nearby post markers (posts + locations)
    * based on optional query parameters such as author, location, and limit.
    */
   @Router.get("/posts")
@@ -91,6 +92,10 @@ class Routes {
     return { msg, post: await Responses.post(post) };
   }
 
+  /**
+   * Updates a specific post piece by its ID
+   * Checks if the authenticated user is the author of the post piece
+   */
   @Router.patch("/posts/:_id")
   async updatePostPiece(session: WebSessionDoc, _id: ObjectId, content: string) {
     const user = WebSession.getUser(session);
@@ -107,15 +112,95 @@ class Routes {
   async deletePostPiece(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Post.isAuthorOfPiece(user, _id);
-    const { msg, deletedPost } = await Post.deletePiece(new ObjectId(_id));
+    const { msg, deletedPostId } = await Post.deletePiece(new ObjectId(_id));
 
     // if the parent post of post piece is deleted,
     // remove the post from the map
-    if (deletedPost) {
-      await MapPost.remove(deletedPost);
+    if (deletedPostId) {
+      await MapPost.remove(deletedPostId);
     }
 
     return { msg };
+  }
+
+  /**
+   * Retrieves a meeting associated with the authenticated user
+   */
+  @Router.get("/meetings")
+  async getMyMeeting(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    return await Meeting.getRequestByUserId(user);
+  }
+
+  /**
+   * Ends the meeting that the authenticated user is participating in
+   */
+  @Router.delete("/meetings")
+  async endMyMeeting(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    return await Meeting.endMeeting(user);
+  }
+
+  /**
+   * Retrieves nearby meeting request markers
+   */
+  @Router.get("/meetings/requests")
+  async getNearbyMeetingRequestMarkers(lat: number, lng: number, limit = 20) {
+    const markers = await MapPost.findNearby({}, limit, { lat, lng });
+
+    // TODO: Reponses.meetingRequestMarkers
+    return Responses.meetingRequestMarkers(markers);
+  }
+
+  /**
+   * Sends a meeting request with current location
+   */
+  @Router.post("/meetings/requests")
+  async sendMeetingRequest(session: WebSessionDoc, location: Location) {
+    const user = WebSession.getUser(session);
+    const { msg, request } = await Meeting.sendRequest(user, location);
+
+    // add new meeting request marker to map
+    await MapMeetingRequest.add(request._id, location);
+
+    return { msg, request: await Responses.meetingRequest(request) };
+  }
+
+  /**
+   * Cancels a meeting request by the authenticated user
+   * and also removes it from the map.
+   */
+  @Router.delete("/meetings/requests")
+  async removeMeetingRequest(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    const { msg, removedRequestId } = await Meeting.removeRequest(user);
+
+    // remove the meeting request marker from the map
+    if (removedRequestId) {
+      await MapMeetingRequest.remove(removedRequestId);
+    }
+    return { msg };
+  }
+
+  /**
+   * Accepts a meeting request from a specific user
+   * Removes the request itself and its marker from the map
+   */
+  @Router.put("/meetings/accept/:from")
+  async acceptMeetingRequest(session: WebSessionDoc, from: string, location: Location) {
+    const user = WebSession.getUser(session);
+    const host = await User.getUserByUsername(from);
+    const request = await Meeting.getRequestByUserId(host._id);
+    if (!request) {
+      throw new NotFoundError(`Meeting request from ${from} does not exist!`);
+    }
+
+    // remove the meeting request marker from the map
+    await MapMeetingRequest.remove(request._id);
+
+    const { msg, meeting } = await Meeting.acceptRequest(user, location, request._id);
+
+    return { msg, meeting: Responses.meeting(meeting) };
   }
 
   /**
@@ -178,43 +263,6 @@ class Routes {
    */
   @Router.get("/heatmap")
   async getHeatMap(lat: number, lng: number, zoom: number) {}
-
-  /**
-   * Retrieves a meeting associated with the authenticated user
-   */
-  @Router.get("/meetings")
-  async getMyMeeting(websession: WebSessionDoc) {}
-
-  /**
-   * Ends a specific meeting
-   */
-  @Router.delete("/meetings/:id")
-  async endMeeting(websession: WebSessionDoc, _id: ObjectId) {}
-
-  /**
-   * Retrieves nearby meeting requests
-   */
-  @Router.get("/meetings/requests")
-  async getNearbyMeetingRequests(lat: number, lng: number) {}
-
-  /**
-   * Sends a meeting request with current location
-   */
-  @Router.post("/meetings/requests")
-  async sendMeetingRequest(session: WebSessionDoc, location: Location) {}
-
-  /**
-   * Cancels a meeting request by the authenticated user
-   */
-  @Router.delete("/meetings/requests")
-  async removeMeetingRequest(session: WebSessionDoc) {}
-
-  /**
-   * Accepts a meeting request from a specific user
-   * and provide location
-   */
-  @Router.put("/meetings/accept/:from")
-  async acceptMeetingRequest(session: WebSessionDoc, from: string, location: Location) {}
 }
 
 export default getExpressRouter(new Routes());

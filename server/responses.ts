@@ -1,7 +1,7 @@
-import { Post, User } from "./app";
+import { Meeting, Post, User } from "./app";
 import { AlreadyContributedError } from "./concepts/collaboration";
 import { MapDoc } from "./concepts/map";
-import { AlreadyMeetingError, MeetingNotFoundError, MeetingRequestAlreadyExistsError } from "./concepts/meeting";
+import { AlreadyMeetingError, MeetingDoc, MeetingNotFoundError, MeetingRequestAlreadyExistsError, MeetingRequestDoc } from "./concepts/meeting";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
 import { Router } from "./framework/router";
 
@@ -27,7 +27,7 @@ export default class Responses {
    */
   static async posts(posts: PostDoc[]) {
     const readablePosts = await Post.convertPieceIdsToPieces(posts);
-    const idToUsername = await User.idsToUsernames(readablePosts.flatMap((post) => post.pieces.map((piece) => piece.author)));
+    const idToUsername = await User.getIdsToUsernames(readablePosts.flatMap((post) => post.pieces.map((piece) => piece.author)));
 
     return readablePosts.map((post) => ({
       ...post,
@@ -49,6 +49,37 @@ export default class Responses {
     return postMarkers.map(({ location }, idx) => ({
       post: readablePosts[idx],
       location,
+    }));
+  }
+
+  /**
+   * Converts a MeetingRequestDoc into a readable format for the frontend
+   */
+  static async meetingRequest({ from, at }: MeetingRequestDoc) {
+    return { from: (await User.getUserById(from)).username, at };
+  }
+
+  /**
+   * Converts a MeetingDoc into a readable format for the frontend
+   */
+  static async meeting({ host, guest, at }: MeetingDoc) {
+    const [hostName, guestName] = await User.idsToUsernames([host, guest]);
+    return { host: hostName, guest: guestName, at };
+  }
+
+  /**
+   * Converts an array of MapDoc objects representing meeting request markers
+   * into more readable format for the frontend
+   */
+  static async meetingRequestMarkers(meetingRequestMarkers: MapDoc[]) {
+    const readableMarkers = await Meeting.idsToMeetingRequests(meetingRequestMarkers.map((marker) => marker.poi));
+    const usernames = await User.idsToUsernames(readableMarkers.map(({ from }) => from));
+
+    return readableMarkers.map(({ at }, idx) => ({
+      meetingRequest: {
+        from: usernames[idx],
+      },
+      location: at,
     }));
   }
 }

@@ -153,7 +153,7 @@ export default class PostConcept {
 
     // if the post was deleted,
     // include the ID of the deleted post
-    return { msg: `Post piece${shouldDeletePost ? " and post" : ""} deleted successfully!`, ...(shouldDeletePost ? { deletedPost: post._id } : {}) };
+    return { msg: `Post piece${shouldDeletePost ? " and post" : ""} deleted successfully!`, ...(shouldDeletePost ? { deletedPostId: post._id } : {}) };
   }
 }
 
