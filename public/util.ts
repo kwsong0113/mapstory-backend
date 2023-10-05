@@ -78,6 +78,48 @@ const operations: operation[] = [
     fields: { id: "input" },
   },
   {
+    name: "Get My Meeting",
+    endpoint: "/api/meeting",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "End My Meeting",
+    endpoint: "/api/meeting",
+    method: "DELETE",
+    fields: {},
+  },
+  {
+    name: "Get Meeting Request Markers",
+    endpoint: "/api/meeting/requests",
+    method: "GET",
+    fields: { lat: "input", lng: "input", limit: "input" },
+  },
+  {
+    name: "Send Meeting Request",
+    endpoint: "/api/meeting/requests",
+    method: "POST",
+    fields: { location: { lat: "input", lng: "input" } },
+  },
+  {
+    name: "Remove Meeting Request",
+    endpoint: "/api/meeting/requests",
+    method: "DELETE",
+    fields: {},
+  },
+  {
+    name: "Accept Meeting Request",
+    endpoint: "/api/meeting/accept/:from",
+    method: "PUT",
+    fields: {
+      from: "input",
+      location: {
+        lat: "input",
+        lng: "input",
+      },
+    },
+  },
+  {
     name: "Get My Collaboration Group",
     endpoint: "/api/collab",
     method: "GET",

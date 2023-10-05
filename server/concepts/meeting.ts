@@ -19,6 +19,17 @@ export default class MeetingConcept {
   public readonly meetingRequests = new DocCollection<MeetingRequestDoc>("meetingRequests");
 
   /**
+   * Retrieves a meeting by the specified user
+   */
+  async getMeetingByUserId(user: ObjectId) {
+    const meeting = await this.meetings.readOne({ $or: [{ host: user }, { guest: user }] });
+    if (!meeting) {
+      throw new MeetingNotFoundError(user);
+    }
+    return meeting;
+  }
+
+  /**
    * Retrieves meeting requests based on the provided query
    */
   async getRequests(query: Filter<MeetingRequestDoc>) {
@@ -31,7 +42,11 @@ export default class MeetingConcept {
    * Retrieves a meeting request by the specified user
    */
   async getRequestByUserId(user: ObjectId) {
-    return await this.meetingRequests.readOne({ from: user });
+    const request = await this.meetingRequests.readOne({ from: user });
+    if (!request) {
+      throw new MeetingRequestNotFoundError(user);
+    }
+    return request;
   }
 
   /**
@@ -73,7 +88,7 @@ export default class MeetingConcept {
     await this.canRequestOrAccept(user);
     const { from, at } = await this.getRequestById(_id);
     // create a new meeting
-    await this.meetings.createOne({
+    const meetingId = await this.meetings.createOne({
       host: from,
       guest: user,
       at: {
@@ -82,10 +97,10 @@ export default class MeetingConcept {
       },
     });
     // remove the request
-    await this.removeRequest(_id);
+    await this.removeRequest(from);
     return {
       msg: "Accepted request!",
-      meeting: (await this.meetings.readOne({ _id })) as MeetingDoc,
+      meeting: (await this.meetings.readOne({ _id: meetingId })) as MeetingDoc,
     };
   }
   /**
@@ -103,7 +118,7 @@ export default class MeetingConcept {
    * Checks if a user can send a meeting request or accept a request
    */
   async canRequestOrAccept(user: ObjectId) {
-    const request = await this.getRequestByUserId(user);
+    const request = await this.meetingRequests.readOne({ from: user });
     if (request) {
       throw new MeetingRequestAlreadyExistsError(user);
     }
@@ -137,5 +152,11 @@ export class AlreadyMeetingError extends NotAllowedError {
 export class MeetingNotFoundError extends NotFoundError {
   constructor(public readonly user: ObjectId) {
     super("{0} is not involved in a meeting!", user);
+  }
+}
+
+export class MeetingRequestNotFoundError extends NotFoundError {
+  constructor(public readonly user: ObjectId) {
+    super("Meeting Request from {0} does not exist!", user);
   }
 }

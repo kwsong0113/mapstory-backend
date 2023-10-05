@@ -1,7 +1,7 @@
 import { Meeting, Post, User } from "./app";
 import { AlreadyContributedError } from "./concepts/collaboration";
 import { MapDoc } from "./concepts/map";
-import { AlreadyMeetingError, MeetingDoc, MeetingNotFoundError, MeetingRequestAlreadyExistsError, MeetingRequestDoc } from "./concepts/meeting";
+import { AlreadyMeetingError, MeetingDoc, MeetingNotFoundError, MeetingRequestAlreadyExistsError, MeetingRequestDoc, MeetingRequestNotFoundError } from "./concepts/meeting";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
 import { Router } from "./framework/router";
 
@@ -105,6 +105,11 @@ Router.registerError(AlreadyMeetingError, async (e) => {
 });
 
 Router.registerError(MeetingNotFoundError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
+  return e.formatWith(username);
+});
+
+Router.registerError(MeetingRequestNotFoundError, async (e) => {
   const username = (await User.getUserById(e.user)).username;
   return e.formatWith(username);
 });
