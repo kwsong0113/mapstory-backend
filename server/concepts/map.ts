@@ -1,7 +1,6 @@
-import haversine from "haversine-distance";
 import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { Location } from "../types";
+import Locations, { Location } from "../locations";
 
 export interface MapDoc extends BaseDoc {
   poi: ObjectId;
@@ -53,7 +52,7 @@ export default class MapConcept {
     // sort markers by the distance from the given location
     // using haversine formula
     if (location) {
-      markers.sort((a: MapDoc, b: MapDoc) => haversine(a.location, location) - haversine(b.location, location));
+      markers.sort((a: MapDoc, b: MapDoc) => Locations.compareDistance(location, a.location, b.location));
     }
 
     return markers.slice(0, limit);

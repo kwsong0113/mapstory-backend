@@ -3,7 +3,7 @@ import { AlreadyContributedError, CollaborationDoc, CollaborationNotMemberError 
 import { MapDoc } from "./concepts/map";
 import { AlreadyMeetingError, MeetingDoc, MeetingNotFoundError, MeetingRequestAlreadyExistsError, MeetingRequestDoc, MeetingRequestNotFoundError } from "./concepts/meeting";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
-import { ReactionNotFoundError } from "./concepts/reaction";
+import { ReactionDoc, ReactionNotFoundError } from "./concepts/reaction";
 import { Router } from "./framework/router";
 
 /**
@@ -96,6 +96,14 @@ export default class Responses {
         item,
       })),
     };
+  }
+
+  static async reactions(reactions: ReactionDoc[]) {
+    const usernames = await User.idsToUsernames(reactions.map((reaction) => reaction.by));
+    return reactions.map((reaction, idx) => ({
+      ...reaction,
+      by: usernames[idx],
+    }));
   }
 }
 

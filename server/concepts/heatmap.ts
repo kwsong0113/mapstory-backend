@@ -1,51 +1,115 @@
-import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { Location } from "../types";
-import { NotFoundError } from "./errors";
+import Locations, { Location } from "../locations";
+
+// Hardcoded 16 regions (cities around Cambridge) for simplicity!
+export type Region =
+  | "Cambridge"
+  | "Somerville"
+  | "Boston"
+  | "Brookline"
+  | "Medford"
+  | "Watertown"
+  | "Everett"
+  | "Arlington"
+  | "Belmont"
+  | "Chelsea"
+  | "Malden"
+  | "Revere"
+  | "Winchester"
+  | "Newton"
+  | "Winthrop"
+  | "Melrose";
+
+const VALID_REGIONS = new Set([
+  "Cambridge",
+  "Somerville",
+  "Boston",
+  "Brookline",
+  "Medford",
+  "Watertown",
+  "Everett",
+  "Arlington",
+  "Belmont",
+  "Chelsea",
+  "Malden",
+  "Revere",
+  "Winchester",
+  "Newton",
+  "Winthrop",
+  "Melrose",
+]);
+
+const MAX_SCORES_LENGTH = 100;
 
 export interface HeatMapDoc extends BaseDoc {
-  item: ObjectId;
-  location: Location;
-  score: number;
+  region: string;
+  scores: number[];
 }
-
-const DECAY_FACTOR = 0.5 / (1000 * 60 * 60 * 24);
 
 export default class HeatMapConcept {
   public readonly dataPoints = new DocCollection<HeatMapDoc>("heatmap");
 
   /**
-   * Adds a data point to the HeatMap
+   * Adds a new score to the heatmap data
    */
-  async addDataPoint(item: ObjectId, location: Location, score: number) {
-    const dataPoint = await this.dataPoints.createOne({ item, location, score });
-    return { msg: "HeatMap data point created!", dataPoint: await this.dataPoints.readOne({ _id: dataPoint }) };
-  }
-
-  /**
-   * Updates the score of a data point in the HeatMap
-   */
-  async updateScore(item: ObjectId, score: number) {
-    const { matchedCount } = await this.dataPoints.updateOne({ item }, { score });
-    if (!matchedCount) {
-      throw new NotFoundError(`HeatMap data point for item ${item} does not exist!`);
+  async add(location: Location, score: number) {
+    const region = await this.getValidRegion(location);
+    if (!region) {
+      // If the location is not supported for heatmap,
+      // simply return a message indicating so.
+      // not considered an error
+      return { msg: "HeatMap not supported!" };
     }
-    return { msg: "HeatMap data point successfully updated!" };
+    await this.dataPoints.updateOneWithOperators(
+      { region },
+      {
+        $push: {
+          scores: {
+            $each: [score],
+            $slice: MAX_SCORES_LENGTH,
+          },
+        },
+      },
+      { upsert: true },
+    );
+    return { msg: "HeatMap data added!" };
   }
 
   /**
-   * Retrieves data points from the HeatMap collection based on a query
+   * Removes a score from the heatmap data
    */
-  async getDataPoints(query: Filter<HeatMapDoc>, limit?: number) {
-    const dataPoints = await this.dataPoints.readMany(query, {
-      sort: { dateUpdated: -1 },
-      limit,
-    });
+  async remove(location: Location, score: number) {
+    const region = await this.getValidRegion(location);
+    if (!region) {
+      return { msg: "HeatMap not supported!" };
+    }
+    await this.dataPoints.updateOneWithOperators(
+      { region },
+      {
+        $pull: {
+          scores: score,
+        },
+      },
+    );
+    return { msg: "HeatMap data removed!" };
+  }
 
-    // Adjusts scores to reflect newer data more prominently
+  /**
+   * Gets a valid region based on a location.
+   */
+  async getValidRegion(location: Location) {
+    const region = await Locations.getCity(location);
+    return region && VALID_REGIONS.has(region) ? (region as Region) : undefined;
+  }
+
+  /**
+   * Retrieves data from the HeatMap collection based on a query
+   */
+  async getDataPoints() {
+    const dataPoints = await this.dataPoints.readMany({});
     return dataPoints.map((dataPoint) => ({
       ...dataPoint,
-      score: dataPoint.score * Math.exp(-DECAY_FACTOR * (Date.now() - dataPoint.dateUpdated.getTime())),
+      avgScore: dataPoint.scores.length ? dataPoint.scores.reduce((acc, cur) => acc + cur) / dataPoint.scores.length : 0,
     }));
   }
 }

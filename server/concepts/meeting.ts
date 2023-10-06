@@ -1,6 +1,6 @@
 import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { Location } from "../types";
+import Locations, { Location } from "../locations";
 import { NotAllowedError, NotFoundError } from "./errors";
 
 export interface MeetingDoc extends BaseDoc {
@@ -94,10 +94,7 @@ export default class MeetingConcept {
     const meetingId = await this.meetings.createOne({
       host: from,
       guest: user,
-      at: {
-        lat: location.lat + at.lat,
-        lng: location.lng + at.lng,
-      },
+      at: Locations.getMidLocation(location, at),
     });
     // remove the request
     await this.removeRequest(from);

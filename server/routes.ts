@@ -1,11 +1,11 @@
 import { ObjectId } from "mongodb";
-import { Collaboration, MapMeetingRequest, MapPost, Meeting, Post, Reaction, User, WebSession } from "./app";
+import { Collaboration, HeatMap, MapMeetingRequest, MapPost, Meeting, Post, Reaction, User, WebSession } from "./app";
 import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import { Router, getExpressRouter } from "./framework/router";
+import { Location } from "./locations";
 import Responses from "./responses";
-import { Location } from "./types";
 
 class Routes {
   @Router.get("/session")
@@ -128,26 +128,40 @@ class Routes {
   @Router.get("/posts/:_id/reactions")
   async getReactions(_id: ObjectId) {
     await Post.isValidPost(_id);
-    return Reaction.getReactions(_id);
+    return await Responses.reactions(await Reaction.getReactions(_id));
   }
 
   /**
    * Adds or changes reaction to a specific post
+   * Add sentiment data to HeatMap
    */
   @Router.post("/posts/:_id/reactions")
-  async react(session: WebSessionDoc, _id: ObjectId, choice: ReactionChoice) {
+  async react(session: WebSessionDoc, _id: ObjectId, choice: ReactionChoice, location: Location) {
     await Post.isValidPost(_id);
     const user = WebSession.getUser(session);
+    const reaction = await Reaction.getReaction(_id, user);
+    if (reaction) {
+      // Remove sentiment score of previous reaction from HeatMap
+      await HeatMap.remove(location, Reaction.getSentiment(reaction.choice));
+    }
+    // Add sentiment of reaction to HeatMap
+    await HeatMap.add(location, Reaction.getSentiment(choice));
     return await Reaction.react(_id, user, choice);
   }
 
   /**
    * Removes a reaction from a specific post
+   * Remove sentiment data from HeatMap
    */
   @Router.delete("/posts/:_id/reactions")
-  async unreact(session: WebSessionDoc, _id: ObjectId) {
+  async unreact(session: WebSessionDoc, _id: ObjectId, location: Location) {
     await Post.isValidPost(_id);
     const user = WebSession.getUser(session);
+    const reaction = await Reaction.getReaction(_id, user);
+    if (reaction) {
+      // Remove sentiment score of reaction from HeatMap
+      await HeatMap.remove(location, Reaction.getSentiment(reaction.choice));
+    }
     return await Reaction.unreact(_id, user);
   }
 
@@ -271,14 +285,13 @@ class Routes {
     return contribution;
   }
 
-  /* eslint-disable */
-
   /**
    * Retrieves data for a heatmap
-   * based on provided latitude, longitude, and zoom level
    */
   @Router.get("/heatmap")
-  async getHeatMap(lat: number, lng: number, zoom: number) {}
+  async getHeatMap() {
+    return await HeatMap.getDataPoints();
+  }
 }
 
 export default getExpressRouter(new Routes());

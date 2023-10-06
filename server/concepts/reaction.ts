@@ -8,7 +8,7 @@ import { NotFoundError } from "./errors";
  */
 export type ReactionChoice = "heart" | "like" | "check" | "question" | "sad" | "angry";
 
-const choiceToSentiment: Record<ReactionChoice, number> = {
+export const CHOICE_TO_SENTIMENT: Record<ReactionChoice, number> = {
   heart: 3,
   like: 2,
   check: 1,
@@ -34,12 +34,19 @@ export default class ReactionConcept {
   }
 
   /**
+   * Retrieves reactions for a specific item by a specific user
+   */
+  async getReaction(to: ObjectId, by: ObjectId) {
+    return this.reactions.readOne({ to, by });
+  }
+
+  /**
    * Adds or updates a reaction to an item
    */
   async react(to: ObjectId, by: ObjectId, choice: ReactionChoice) {
     await this.reactions.updateOne({ by, to }, { choice }, { upsert: true });
 
-    return { msg: "reaction successful!", sentiment: await this.getAvgSentiment(to) };
+    return { msg: "reaction successful!" };
   }
 
   /**
@@ -51,15 +58,11 @@ export default class ReactionConcept {
       throw new ReactionNotFoundError(by, to);
     }
 
-    return { msg: "reaction deleted!", sentiment: await this.getAvgSentiment(to) };
+    return { msg: "reaction deleted!" };
   }
 
-  /**
-   * Calculates the average sentiment value for reactions to an item
-   */
-  async getAvgSentiment(item: ObjectId) {
-    const reactions = await this.reactions.readMany({ to: item });
-    return reactions.length > 0 ? reactions.reduce((acc, cur) => acc + choiceToSentiment[cur.choice], 0) / reactions.length : undefined;
+  getSentiment(choice: ReactionChoice) {
+    return CHOICE_TO_SENTIMENT[choice];
   }
 }
 

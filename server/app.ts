@@ -1,4 +1,5 @@
 import CollaborationConcept from "./concepts/collaboration";
+import HeatMapConcept from "./concepts/heatmap";
 import MapConcept from "./concepts/map";
 import MeetingConcept from "./concepts/meeting";
 import PostConcept from "./concepts/post";
@@ -15,3 +16,4 @@ export const Meeting = new MeetingConcept();
 export const MapPost = new MapConcept("mapPosts");
 export const MapMeetingRequest = new MapConcept("mapMeetingRequests");
 export const Reaction = new ReactionConcept();
+export const HeatMap = new HeatMapConcept();

@@ -87,13 +87,13 @@ const operations: operation[] = [
     name: "React to Post",
     endpoint: "/api/posts/:id/reactions",
     method: "POST",
-    fields: { id: "input", choice: "input" },
+    fields: { id: "input", choice: "input", location: { lat: "input", lng: "input" } },
   },
   {
     name: "Unreact to Post",
     endpoint: "/api/posts/:id/reactions",
     method: "DELETE",
-    fields: { id: "input" },
+    fields: { id: "input", location: { lat: "input", lng: "input" } },
   },
   {
     name: "Get My Meeting",
@@ -148,6 +148,12 @@ const operations: operation[] = [
     endpoint: "/api/collab/:id/contribute",
     method: "POST",
     fields: { id: "input", content: "input" },
+  },
+  {
+    name: "Get HeatMap DataPoints",
+    endpoint: "/api/heatmap",
+    method: "GET",
+    fields: {},
   },
 ];
 
