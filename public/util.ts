@@ -78,6 +78,24 @@ const operations: operation[] = [
     fields: { id: "input" },
   },
   {
+    name: "Get Reactions for Post",
+    endpoint: "/api/posts/:id/reactions",
+    method: "GET",
+    fields: { id: "input" },
+  },
+  {
+    name: "React to Post",
+    endpoint: "/api/posts/:id/reactions",
+    method: "POST",
+    fields: { id: "input", choice: "input" },
+  },
+  {
+    name: "Unreact to Post",
+    endpoint: "/api/posts/:id/reactions",
+    method: "DELETE",
+    fields: { id: "input" },
+  },
+  {
     name: "Get My Meeting",
     endpoint: "/api/meeting",
     method: "GET",

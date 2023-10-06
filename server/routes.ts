@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { Collaboration, MapMeetingRequest, MapPost, Meeting, Post, User, WebSession } from "./app";
+import { Collaboration, MapMeetingRequest, MapPost, Meeting, Post, Reaction, User, WebSession } from "./app";
 import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -123,6 +123,35 @@ class Routes {
   }
 
   /**
+   * Retrieves reactions associated with a specific post
+   */
+  @Router.get("/posts/:_id/reactions")
+  async getReactions(_id: ObjectId) {
+    await Post.isValidPost(_id);
+    return Reaction.getReactions(_id);
+  }
+
+  /**
+   * Adds or changes reaction to a specific post
+   */
+  @Router.post("/posts/:_id/reactions")
+  async react(session: WebSessionDoc, _id: ObjectId, choice: ReactionChoice) {
+    await Post.isValidPost(_id);
+    const user = WebSession.getUser(session);
+    return await Reaction.react(_id, user, choice);
+  }
+
+  /**
+   * Removes a reaction from a specific post
+   */
+  @Router.delete("/posts/:_id/reactions")
+  async unreact(session: WebSessionDoc, _id: ObjectId) {
+    await Post.isValidPost(_id);
+    const user = WebSession.getUser(session);
+    return await Reaction.unreact(_id, user);
+  }
+
+  /**
    * Retrieves a meeting associated with the authenticated user
    */
   @Router.get("/meeting")
@@ -243,24 +272,6 @@ class Routes {
   }
 
   /* eslint-disable */
-
-  /**
-   * Retrieves reactions associated with a specific post
-   */
-  @Router.get("/posts/:_id/reactions")
-  async getReactions(_id: ObjectId) {}
-
-  /**
-   * Adds or changes reaction to a specific post
-   */
-  @Router.put("/posts/:_id/reactions")
-  async react(session: WebSessionDoc, _id: ObjectId, reactionChoice: ReactionChoice) {}
-
-  /**
-   * Removes a reaction from a specific post
-   */
-  @Router.delete("/posts/_:id/reactions")
-  async unReact(session: WebSessionDoc, _id: ObjectId) {}
 
   /**
    * Retrieves data for a heatmap

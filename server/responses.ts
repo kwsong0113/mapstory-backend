@@ -3,6 +3,7 @@ import { AlreadyContributedError, CollaborationDoc, CollaborationNotMemberError 
 import { MapDoc } from "./concepts/map";
 import { AlreadyMeetingError, MeetingDoc, MeetingNotFoundError, MeetingRequestAlreadyExistsError, MeetingRequestDoc, MeetingRequestNotFoundError } from "./concepts/meeting";
 import { PostAuthorNotMatchError, PostDoc, PostPieceAuthorNotMatchError } from "./concepts/post";
+import { ReactionNotFoundError } from "./concepts/reaction";
 import { Router } from "./framework/router";
 
 /**
@@ -136,4 +137,9 @@ Router.registerError(CollaborationNotMemberError, async (e) => {
 Router.registerError(AlreadyContributedError, async (e) => {
   const username = (await User.getUserById(e.user)).username;
   return e.formatWith(username, e._id);
+});
+
+Router.registerError(ReactionNotFoundError, async (e) => {
+  const username = (await User.getUserById(e.user)).username;
+  return e.formatWith(username, "post " + e._id);
 });

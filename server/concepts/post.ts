@@ -48,14 +48,13 @@ export default class PostConcept {
   }
 
   /**
-   * Retrieves a post by its ID
+   * Checks if a post exists
    */
-  async getPostById(_id: ObjectId) {
+  async isValidPost(_id: ObjectId) {
     const post = await this.posts.readOne({ _id });
     if (!post) {
       throw new NotFoundError(`Post ${_id} does not exist!`);
     }
-    return post;
   }
 
   /**
