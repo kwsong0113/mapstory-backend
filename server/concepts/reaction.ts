@@ -4,7 +4,6 @@ import { NotFoundError } from "./errors";
 
 /**
  * available reaction choices
- * @todo replace "a", "b" with actual reaction choices
  */
 export type ReactionChoice = "heart" | "like" | "check" | "question" | "sad" | "angry";
 
