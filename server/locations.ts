@@ -1,4 +1,5 @@
 import haversine from "haversine-distance";
+import { BadValuesError } from "./concepts/errors";
 
 export interface Location {
   lat: number;
@@ -6,6 +7,16 @@ export interface Location {
 }
 
 export default class Locations {
+  static isValidLocation(location: Location) {
+    if (location && typeof location === "object") {
+      const { lat, lng } = location;
+      if (typeof lat === "number" && typeof lng === "number" && lat <= 90 && lat >= -90 && lng <= 180 && lng >= -180) {
+        return;
+      }
+    }
+    throw new BadValuesError(`Invalid location!`);
+  }
+
   static async getCity({ lat, lng }: Location) {
     try {
       const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${process.env.GEOAPIFY_API_KEY}`);

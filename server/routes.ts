@@ -4,7 +4,7 @@ import { ReactionChoice } from "./concepts/reaction";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import { Router, getExpressRouter } from "./framework/router";
-import { Location } from "./locations";
+import Locations, { Location } from "./locations";
 import Responses from "./responses";
 
 class Routes {
@@ -82,6 +82,7 @@ class Routes {
    */
   @Router.post("/posts")
   async createPost(session: WebSessionDoc, content: string, location: Location) {
+    Locations.isValidLocation(location);
     const user = WebSession.getUser(session);
     const { msg, post } = await Post.createSingle(user, content);
 
@@ -137,6 +138,7 @@ class Routes {
    */
   @Router.post("/posts/:_id/reactions")
   async react(session: WebSessionDoc, _id: ObjectId, choice: ReactionChoice, location: Location) {
+    Locations.isValidLocation(location);
     await Post.isValidPost(_id);
     const user = WebSession.getUser(session);
     const reaction = await Reaction.getReaction(_id, user);
@@ -156,6 +158,7 @@ class Routes {
    */
   @Router.delete("/posts/:_id/reactions")
   async unreact(session: WebSessionDoc, _id: ObjectId, location: Location) {
+    Locations.isValidLocation(location);
     await Post.isValidPost(_id);
     const user = WebSession.getUser(session);
     const reaction = await Reaction.getReaction(_id, user);
@@ -200,6 +203,7 @@ class Routes {
    */
   @Router.post("/meeting/requests")
   async sendMeetingRequest(session: WebSessionDoc, location: Location) {
+    Locations.isValidLocation(location);
     const user = WebSession.getUser(session);
     const { msg, request } = await Meeting.sendRequest(user, location);
 
@@ -231,6 +235,7 @@ class Routes {
    */
   @Router.put("/meeting/accept/:from")
   async acceptMeetingRequest(session: WebSessionDoc, from: string, location: Location) {
+    Locations.isValidLocation(location);
     const user = WebSession.getUser(session);
     const host = await User.getUserByUsername(from);
     const request = await Meeting.getRequestByUserId(host._id);
