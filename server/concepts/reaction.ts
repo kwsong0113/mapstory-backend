@@ -46,9 +46,9 @@ export default class ReactionConcept {
    */
   async react(to: ObjectId, by: ObjectId, choice: ReactionChoice) {
     this.isValidReaction(choice);
-    await this.reactions.updateOne({ by, to }, { choice }, { upsert: true });
+    const { matchedCount } = await this.reactions.updateOne({ by, to }, { choice }, { upsert: true });
 
-    return { msg: "reaction successful!" };
+    return { msg: matchedCount ? "reaction updated!" : "reaction added!" };
   }
 
   /**
