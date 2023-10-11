@@ -144,9 +144,10 @@ class Routes {
       // Remove sentiment score of previous reaction from HeatMap
       await HeatMap.remove(location, Reaction.getSentiment(reaction.choice));
     }
+    const result = await Reaction.react(_id, user, choice);
     // Add sentiment of reaction to HeatMap
     await HeatMap.add(location, Reaction.getSentiment(choice));
-    return await Reaction.react(_id, user, choice);
+    return result;
   }
 
   /**

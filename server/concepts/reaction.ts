@@ -1,11 +1,13 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotFoundError } from "./errors";
+import { BadValuesError, NotFoundError } from "./errors";
 
 /**
  * available reaction choices
  */
 export type ReactionChoice = "heart" | "like" | "check" | "question" | "sad" | "angry";
+
+const availableReactionChoices = new Set<ReactionChoice>(["heart", "like", "check", "question", "sad", "angry"]);
 
 export const CHOICE_TO_SENTIMENT: Record<ReactionChoice, number> = {
   heart: 3,
@@ -43,6 +45,7 @@ export default class ReactionConcept {
    * Adds or updates a reaction to an item
    */
   async react(to: ObjectId, by: ObjectId, choice: ReactionChoice) {
+    this.isValidReaction(choice);
     await this.reactions.updateOne({ by, to }, { choice }, { upsert: true });
 
     return { msg: "reaction successful!" };
@@ -58,6 +61,12 @@ export default class ReactionConcept {
     }
 
     return { msg: "reaction deleted!" };
+  }
+
+  isValidReaction(reactionChoice: ReactionChoice) {
+    if (!availableReactionChoices.has(reactionChoice)) {
+      throw new BadValuesError(`${reactionChoice} is not one of available reactions!`);
+    }
   }
 
   getSentiment(choice: ReactionChoice) {
