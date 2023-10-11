@@ -133,7 +133,10 @@ export default class MeetingConcept {
    * Converts meeting request IDs into an array of MeetingRequestDoc
    */
   async idsToMeetingRequests(ids: ObjectId[]) {
-    return await this.meetingRequests.readMany({ _id: { $in: ids } });
+    const meetingRequests = await this.meetingRequests.readMany({ _id: { $in: ids } });
+    const idToMeetingRequest = new Map(meetingRequests.map((request) => [request._id.toString(), request]));
+
+    return ids.map((id) => idToMeetingRequest.get(id.toString())!);
   }
 }
 
