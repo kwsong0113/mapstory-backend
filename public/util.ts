@@ -57,13 +57,13 @@ const operations: operation[] = [
     name: "Get Post Markers",
     endpoint: "/api/posts",
     method: "GET",
-    fields: { author: "input", lat: "input", lng: "input", limit: "input" },
+    fields: { author: "input", lat: "number", lng: "number", limit: "number" },
   },
   {
     name: "Create Single Post",
     endpoint: "/api/posts",
     method: "POST",
-    fields: { content: "input", location: { lat: "input", lng: "input" } },
+    fields: { content: "input", location: { lat: "number", lng: "number" } },
   },
   {
     name: "Update Post Piece",
@@ -87,13 +87,13 @@ const operations: operation[] = [
     name: "React to Post",
     endpoint: "/api/posts/:id/reactions",
     method: "POST",
-    fields: { id: "input", choice: "input", location: { lat: "input", lng: "input" } },
+    fields: { id: "input", choice: "input", location: { lat: "number", lng: "number" } },
   },
   {
     name: "Unreact to Post",
     endpoint: "/api/posts/:id/reactions",
     method: "DELETE",
-    fields: { id: "input", location: { lat: "input", lng: "input" } },
+    fields: { id: "input", location: { lat: "number", lng: "number" } },
   },
   {
     name: "Get My Meeting",
@@ -111,13 +111,13 @@ const operations: operation[] = [
     name: "Get Meeting Request Markers",
     endpoint: "/api/meeting/requests",
     method: "GET",
-    fields: { lat: "input", lng: "input", limit: "input" },
+    fields: { lat: "number", lng: "number", limit: "number" },
   },
   {
     name: "Send Meeting Request",
     endpoint: "/api/meeting/requests",
     method: "POST",
-    fields: { location: { lat: "input", lng: "input" } },
+    fields: { location: { lat: "number", lng: "number" } },
   },
   {
     name: "Remove Meeting Request",
@@ -132,8 +132,8 @@ const operations: operation[] = [
     fields: {
       from: "input",
       location: {
-        lat: "input",
-        lng: "input",
+        lat: "number",
+        lng: "number",
       },
     },
   },
